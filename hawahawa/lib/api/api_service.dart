@@ -128,10 +128,13 @@ class LocationAPI {
         final List results = jsonDecode(response.body);
         if (results.isNotEmpty) {
           final first = results[0];
+          final lat = double.parse(first['lat'].toString());
+          final lon = double.parse(first['lon'].toString());
           return LocationResult(
-            lat: double.parse(first['lat'].toString()),
-            lon: double.parse(first['lon'].toString()),
+            lat: lat,
+            lon: lon,
             displayName: first['display_name'] ?? name,
+            timeZoneId: _getTimezoneId(lat, lon),
           );
         }
       }
@@ -171,7 +174,16 @@ class LocationAPI {
       }
 
       final List results = jsonDecode(response.body);
-      return results.map((json) => LocationResult.fromNominatim(json)).toList();
+      return results.map((json) {
+        final lat = double.parse(json['lat'].toString());
+        final lon = double.parse(json['lon'].toString());
+        return LocationResult(
+          lat: lat,
+          lon: lon,
+          displayName: json['display_name'] ?? 'Unknown',
+          timeZoneId: _getTimezoneId(lat, lon),
+        );
+      }).toList();
     } on TimeoutException {
       print('Search Error: Request timed out after 15 seconds');
       return [];
@@ -179,6 +191,38 @@ class LocationAPI {
       print('Search Error: $e');
       return [];
     }
+  }
+
+  /// Get approximate IANA timezone ID based on coordinates
+  /// This is a simplified mapping - in production, use a proper timezone library
+  static String _getTimezoneId(double latitude, double longitude) {
+    // Simplified timezone mapping based on longitude
+    if (longitude >= -180 && longitude < -165) return 'Pacific/Honolulu';
+    if (longitude >= -165 && longitude < -150) return 'America/Anchorage';
+    if (longitude >= -150 && longitude < -135) return 'America/Denver';
+    if (longitude >= -135 && longitude < -120) return 'America/Los_Angeles';
+    if (longitude >= -120 && longitude < -105) return 'America/Denver';
+    if (longitude >= -105 && longitude < -90) return 'America/Chicago';
+    if (longitude >= -90 && longitude < -75) return 'America/New_York';
+    if (longitude >= -75 && longitude < -60) return 'America/Halifax';
+    if (longitude >= -60 && longitude < -45)
+      return 'America/Argentina/Buenos_Aires';
+    if (longitude >= -45 && longitude < -30) return 'America/Sao_Paulo';
+    if (longitude >= -30 && longitude < -15) return 'Atlantic/Azores';
+    if (longitude >= -15 && longitude < 0) return 'Africa/Casablanca';
+    if (longitude >= 0 && longitude < 15) return 'Europe/London';
+    if (longitude >= 15 && longitude < 30) return 'Europe/Paris';
+    if (longitude >= 30 && longitude < 45) return 'Europe/Moscow';
+    if (longitude >= 45 && longitude < 60) return 'Asia/Dubai';
+    if (longitude >= 60 && longitude < 75) return 'Asia/Kolkata';
+    if (longitude >= 75 && longitude < 90) return 'Asia/Karachi';
+    if (longitude >= 90 && longitude < 105) return 'Asia/Bangkok';
+    if (longitude >= 105 && longitude < 120) return 'Asia/Bangkok';
+    if (longitude >= 120 && longitude < 135) return 'Asia/Hong_Kong';
+    if (longitude >= 135 && longitude < 150) return 'Asia/Tokyo';
+    if (longitude >= 150 && longitude < 165) return 'Pacific/Auckland';
+    if (longitude >= 165 && longitude <= 180) return 'Pacific/Fiji';
+    return 'UTC';
   }
 }
 
@@ -200,11 +244,15 @@ class WeatherAPI {
         return _parseWeatherResponse(json, location);
       } else {
         print('Weather API Error: ${response.statusCode}');
-        return WeatherReport.placeholder();
+        final tzOffset = location.lon / 15.0;
+        final timezoneOffsetHours = (tzOffset * 2).round() / 2;
+        return WeatherReport.placeholder(timezoneOffset: timezoneOffsetHours);
       }
     } catch (e) {
       print('Weather API Exception: $e');
-      return WeatherReport.placeholder();
+      final tzOffset = location.lon / 15.0;
+      final timezoneOffsetHours = (tzOffset * 2).round() / 2;
+      return WeatherReport.placeholder(timezoneOffset: timezoneOffsetHours);
     }
   }
 
@@ -244,11 +292,16 @@ class WeatherAPI {
         }
       }
 
+      // Calculate timezone offset from location coordinates
+      final tzOffset = location.lon / 15.0;
+      final timezoneOffsetHours = (tzOffset * 2).round() / 2;
+
       return WeatherReport(
         locationName: location.displayName,
         current: current,
         hourly: hourly,
         daily: daily,
+        timezoneOffset: timezoneOffsetHours,
       );
     } catch (e) {
       print('Parse Error: $e');

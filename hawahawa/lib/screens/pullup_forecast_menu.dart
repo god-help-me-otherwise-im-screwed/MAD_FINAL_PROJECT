@@ -73,7 +73,11 @@ class PullUpForecastMenu extends ConsumerWidget {
                               ? temp
                               : (temp != null ? (temp * 9 / 5) + 32 : 0);
                           final unit = settings.tempUnit == 0 ? '°C' : '°F';
-                          final timeStr = hour.getFormattedTime();
+                          final is24HourFormat = settings.timeFormat == 0;
+                          final timeStr = hour.getFormattedTime(
+                            timezoneOffset: weather.timezoneOffset,
+                            is24HourFormat: is24HourFormat,
+                          );
 
                           return Container(
                             width: 70,
@@ -137,6 +141,7 @@ class PullUpForecastMenu extends ConsumerWidget {
                           ? temp
                           : (temp != null ? (temp * 9 / 5) + 32 : 0);
                       final unit = settings.tempUnit == 0 ? '°C' : '°F';
+                      final is24HourFormat = settings.timeFormat == 0;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -152,7 +157,10 @@ class PullUpForecastMenu extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              day.getFormattedTime(),
+                              day.getFormattedTime(
+                                timezoneOffset: weather.timezoneOffset,
+                                is24HourFormat: is24HourFormat,
+                              ),
                               style: const TextStyle(color: kDarkText),
                             ),
                             Text(

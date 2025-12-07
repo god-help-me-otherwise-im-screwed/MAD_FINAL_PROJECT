@@ -16,11 +16,13 @@ class LocationResult {
   final double lat;
   final double lon;
   final String displayName;
+  final String? timeZoneId; // IANA timezone identifier (e.g., 'Asia/Karachi')
 
   LocationResult({
     required this.lat,
     required this.lon,
     required this.displayName,
+    this.timeZoneId,
   });
 
   factory LocationResult.fromNominatim(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class LocationResult {
       lat: double.parse(json['lat'].toString()),
       lon: double.parse(json['lon'].toString()),
       displayName: json['display_name'] ?? 'Unknown',
+      timeZoneId: null, // Will be fetched separately
     );
   }
 

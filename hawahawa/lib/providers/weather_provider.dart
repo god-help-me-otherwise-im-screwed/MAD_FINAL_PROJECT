@@ -26,6 +26,7 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
       // Serialize weather data to JSON
       final weatherJson = jsonEncode({
         'locationName': report.locationName,
+        'timezoneOffset': report.timezoneOffset,
         'current': report.current != null
             ? {
                 'timestamp': report.current!.timestamp,
@@ -91,6 +92,7 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
         current: current,
         hourly: hourly,
         daily: daily,
+        timezoneOffset: (decoded['timezoneOffset'] as num?)?.toDouble() ?? 0,
       );
 
       print('[WEATHER CACHE] Cached weather loaded successfully');
@@ -111,15 +113,14 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
         print('[WEATHER] Online - fetching from API');
         try {
           final report = await WeatherAPI.fetchWeather(location);
-          
+
           // Assuming WeatherAPI.fetchWeather returns non-nullable WeatherReport
-          state = report; 
+          state = report;
           // Cache successful fetch for offline use
           await _cacheWeatherReport(report);
           // Mark data as fresh (not stale)
           await _setDataIsFresh(true);
           print('[WEATHER] Data fetched and cached');
-          
         } catch (e) {
           print('[WEATHER ERROR] API call failed: $e');
           // Fall back to cached data on API error
@@ -131,7 +132,7 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
           } else {
             // No cache available, use default
             // FIX: Removed unnecessary null check on WeatherReport.placeholder()
-            state = WeatherReport.placeholder(); 
+            state = WeatherReport.placeholder();
             await _setDataIsFresh(false);
             print('[WEATHER] Using default weather (no cache available)');
           }
