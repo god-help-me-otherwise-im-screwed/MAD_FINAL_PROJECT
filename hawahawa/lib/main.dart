@@ -56,6 +56,7 @@ Future<void> _performGlobalDebugReset() async {
     await prefs.remove('backgroundMode');
     await prefs.remove('cached_weather');
     await prefs.remove('weather_is_fresh');
+    await prefs.remove('location_permission_checked');
     print('[DEBUG] SharedPreferences cleared successfully');
 
     // Navigate back to splash with reset flag

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hawahawa/screens/startup_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hawahawa/screens/weather_display_screen.dart';
+import 'package:hawahawa/screens/location_permission_screen.dart';
+import 'package:hawahawa/screens/startup_screen.dart';
 import 'package:hawahawa/providers/location_provider.dart';
 import 'package:hawahawa/providers/weather_provider.dart';
 
@@ -81,12 +83,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   void _startApp() async {
-    // If reset flag is set, navigate to startup immediately
+    // If reset flag is set, navigate to location permission immediately
     if (widget.reset) {
       await Future.delayed(const Duration(milliseconds: 700));
-      _navigateToStartup();
+      _navigateToLocationPermission();
       return;
     }
+
+    // Check if location permission has been requested before
+    final prefs = await SharedPreferences.getInstance();
+    final permissionChecked =
+        prefs.getBool('location_permission_checked') ?? false;
 
     // Try to load saved location
     // NOTE: Location persistence is INDEPENDENT of authentication status
@@ -97,9 +104,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 2200));
 
     if (mounted) {
-      // Smart routing: if location is saved, go to weather display
-      // Otherwise, go to startup screen for location selection
-      if (savedLocation != null) {
+      // Smart routing:
+      // 1. If first launch and location permission NOT checked -> Go to LocationPermissionScreen
+      // 2. If location is saved -> Go to WeatherDisplayScreen
+      // 3. Otherwise -> Go to StartupScreen for manual location selection
+
+      if (!permissionChecked) {
+        print(
+          '[ROUTING] First launch, permission not checked -> LocationPermissionScreen',
+        );
+        _navigateToLocationPermission();
+      } else if (savedLocation != null) {
         print('[ROUTING] Saved location found -> WeatherDisplayScreen');
         // Fetch weather data before navigating
         await ref.read(weatherProvider.notifier).fetchWeather(savedLocation);
@@ -109,6 +124,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         _navigateToStartup();
       }
     }
+  }
+
+  void _navigateToLocationPermission() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LocationPermissionScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   void _navigateToStartup() {
