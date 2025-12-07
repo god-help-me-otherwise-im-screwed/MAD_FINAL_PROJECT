@@ -26,10 +26,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     _gradientController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 15),
+      // Increased duration slightly for a more gentle flow
+      duration: const Duration(seconds: 18), 
     );
     _gradientAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
-      CurvedAnimation(parent: _gradientController, curve: Curves.linear),
+      // CHANGED: Using a smoother curve for a "breathing" effect
+      CurvedAnimation(parent: _gradientController, curve: Curves.easeInOutCubic),
     );
 
     _gradientController.repeat(reverse: true);
@@ -94,10 +96,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final theme = Theme.of(context);
     final baseColor = theme.scaffoldBackgroundColor;
     
-    // --- CUSTOM COLOR DEFINITION HERE ---
-    final customTeal = const Color.fromARGB(255, 13, 54, 41); 
-    final highlightColor = customTeal.withAlpha(128); 
-    // ------------------------------------
+    // --- CUSTOM COLOR DEFINITION ---
+    final customColor1 = const Color.fromARGB(255, 25, 1, 44); 
+    final highlightColor = customColor1.withAlpha(128); 
+    
+    final customColor2 = const Color.fromARGB(255, 95, 10, 112);
+    final shadowColor = customColor2.withAlpha(64);
+    // -------------------------------
 
     return Scaffold(
       backgroundColor: baseColor,
@@ -109,13 +114,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [baseColor, highlightColor, baseColor],
+                    // CHANGED: Diagonal movement for a sweeping effect
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    
+                    colors: [baseColor, shadowColor, highlightColor, shadowColor, baseColor],
+                    
+                    // Kept the stops as they were adjusted to fit the 5 colors
                     stops: [
-                      -0.5 + _gradientAnimation.value * 0.5,
-                      0.5 + _gradientAnimation.value * 0.5,
-                      1.5 + _gradientAnimation.value * 0.5,
+                      -0.6 + _gradientAnimation.value * 0.5, 
+                      -0.3 + _gradientAnimation.value * 0.5, 
+                      0.5 + _gradientAnimation.value * 0.5,  
+                      1.3 + _gradientAnimation.value * 0.5,  
+                      1.6 + _gradientAnimation.value * 0.5,  
                     ],
                   ),
                 ),

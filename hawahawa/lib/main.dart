@@ -46,5 +46,5 @@ final ThemeData _appTheme = ThemeData(
     headlineSmall: TextStyle(color: kDarkText, fontSize: 20.0, fontFamily: 'BoldPixels'),
     labelLarge: TextStyle(color: kDarkText, fontSize: 16.0, fontFamily: 'BoldPixels'),
   ),
-  colorScheme: ColorScheme.dark(primary: const Color.fromARGB(255, 41, 23, 65), secondary: kDarkAccent),
+  colorScheme: ColorScheme.dark(primary: kDarkPrimary, secondary: kDarkAccent),
 );
