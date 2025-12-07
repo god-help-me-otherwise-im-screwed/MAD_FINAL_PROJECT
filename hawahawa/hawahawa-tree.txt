@@ -1,0 +1,133 @@
+hawahawa/
+- .gitignore
+- .metadata
+- analysis_options.yaml
+- pubspec.yaml
+- README.md
+- .dart_tool/
+  - package_config.json
+  - package_graph.json
+  - version
+  - dartpad/
+    - web_plugin_registrant.dart
+  - flutter_build/
+    - e2ca8c61a0d884e20ed3cf7295ea974b/
+- android/
+  - .gitignore
+  - build.gradle.kts
+  - gradle.properties
+  - local.properties
+  - settings.gradle.kts
+  - app/
+    - build.gradle.kts
+    - src/
+  - build/
+    - reports/
+  - gradle/
+    - wrapper/
+- assets/
+  - fonts/
+  - logo/
+- build/
+  - .last_build_id
+  - e72a3dd6ad48369f4d5f966a6f1087d3/
+    - _composite.stamp
+    - .filecache
+    - dart_build_result.json
+    - dart_build.d
+    - dart_build.stamp
+    - gen_dart_plugin_registrant.stamp
+    - gen_localizations.stamp
+    - outputs.json
+  - flutter_assets/
+    - FontManifest.json
+    - NativeAssetsManifest.json
+    - NOTICES.Z
+    - assets/
+    - fonts/
+    - packages/
+    - shaders/
+  - native_assets/
+    - windows/
+  - windows/
+    - x64/
+- ios/
+  - .gitignore
+  - Flutter/
+    - AppFrameworkInfo.plist
+    - Debug.xcconfig
+    - flutter_export_environment.sh
+    - Generated.xcconfig
+    - Release.xcconfig
+    - ephemeral/
+  - Runner/
+    - AppDelegate.swift
+    - GeneratedPluginRegistrant.h
+    - GeneratedPluginRegistrant.m
+    - Info.plist
+    - Runner-Bridging-Header.h
+    - Assets.xcassets/
+    - Base.lproj/
+  - Runner.xcodeproj/
+    - project.pbxproj
+    - project.xcworkspace/
+    - xcshareddata/
+  - Runner.xcworkspace/
+    - contents.xcworkspacedata
+    - xcshareddata/
+  - RunnerTests/
+    - RunnerTests.swift
+- lib/
+  - main.dart
+  - config/
+    - ui_settings.dart
+  - constants/
+    - colors.dart
+  - screens/
+    - splash_screen.dart
+  - state/
+    - theme_state.dart
+  - widgets/
+    - safe_zone_container.dart
+    - scene_panel.dart
+- linux/
+  - .gitignore
+  - CMakeLists.txt
+  - flutter/
+    - CMakeLists.txt
+    - generated_plugin_registrant.cc
+    - generated_plugin_registrant.h
+    - generated_plugins.cmake
+    - ephemeral/
+  - runner/
+    - CMakeLists.txt
+    - main.cc
+    - my_application.cc
+    - my_application.h
+- macos/
+  - .gitignore
+  - Flutter/
+    - Flutter-Debug.xcconfig
+    - Flutter-Release.xcconfig
+    - GeneratedPluginRegistrant.swift
+    - ephemeral/
+  - Runner/
+    - AppDelegate.swift
+    - DebugProfile.entitlements
+    - Info.plist
+    - MainFlutterWindow.swift
+    - ...
+  - Runner.xcodeproj/
+    - ...
+  - Runner.xcworkspace/
+    - ...
+  - RunnerTests/
+- web/
+  - index.html
+  - manifest.json
+  - icons/
+- windows/
+  - .gitignore
+  - CMakeLists.txt
+  - flutter/
+  - runner/
