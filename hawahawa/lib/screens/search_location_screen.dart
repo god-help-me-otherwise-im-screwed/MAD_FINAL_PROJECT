@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hawahawa/constants/colors.dart';
 import 'package:hawahawa/api/api_service.dart';
 import 'package:hawahawa/models/location_model.dart';
-import 'package:hawahawa/providers/location_provider.dart';
-import 'package:hawahawa/providers/weather_provider.dart';
-import 'package:hawahawa/screens/weather_display_screen.dart';
 
 class SearchLocationScreen extends ConsumerStatefulWidget {
   const SearchLocationScreen({super.key});
@@ -48,24 +45,9 @@ class _SearchLocationScreenState extends ConsumerState<SearchLocationScreen> {
     }
   }
 
-  Future<void> _selectLocation(LocationResult location) async {
-    setState(() => _isSearching = true);
-    try {
-      ref.read(locationProvider.notifier).setLocation(location);
-      await ref.read(weatherProvider.notifier).fetchWeather(location);
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (c) => const WeatherDisplayScreen()),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSearching = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
+  void _selectLocation(LocationResult location) {
+    // Return the selected location back to StartupScreen
+    Navigator.pop<LocationResult?>(context, location);
   }
 
   @override
@@ -96,7 +78,9 @@ class _SearchLocationScreenState extends ConsumerState<SearchLocationScreen> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: kDarkAccent.withValues(alpha: 0.5)),
+                  borderSide: BorderSide(
+                    color: kDarkAccent.withValues(alpha: 0.5),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -126,7 +110,9 @@ class _SearchLocationScreenState extends ConsumerState<SearchLocationScreen> {
                   decoration: BoxDecoration(
                     color: kDarkPrimary.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: kDarkAccent.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: kDarkAccent.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: ListView.builder(
                     itemCount: _suggestions.length,
@@ -222,10 +208,14 @@ class _SearchLocationScreenState extends ConsumerState<SearchLocationScreen> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: kDarkAccent.withValues(alpha: 0.2),
+                                        color: kDarkAccent.withValues(
+                                          alpha: 0.2,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: kDarkAccent.withValues(alpha: 0.5),
+                                          color: kDarkAccent.withValues(
+                                            alpha: 0.5,
+                                          ),
                                         ),
                                       ),
                                       child: Text(
