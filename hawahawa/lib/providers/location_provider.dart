@@ -55,12 +55,10 @@ class LocationNotifier extends StateNotifier<LocationResult?> {
     }
   }
 
-  Future<void> requestGpsLocation() async {
+  /// Request GPS location and RETURN it (do not set state yet)
+  Future<LocationResult?> requestGpsLocation() async {
     final result = await LocationAPI.getLocationFromGps();
-    if (result != null) {
-      state = result;
-      await saveLocation(result);
-    }
+    return result;
   }
 
   Future<void> searchLocation(String query) async {
@@ -83,5 +81,5 @@ class LocationNotifier extends StateNotifier<LocationResult?> {
 
 final locationProvider =
     StateNotifierProvider<LocationNotifier, LocationResult?>((ref) {
-      return LocationNotifier();
-    });
+  return LocationNotifier();
+});
