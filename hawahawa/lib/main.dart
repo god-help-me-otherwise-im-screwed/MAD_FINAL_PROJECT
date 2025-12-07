@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hawahawa/constants/colors.dart';
+import 'package:hawahawa/providers/settings_provider.dart';
+import 'package:hawahawa/providers/location_provider.dart';
+import 'package:hawahawa/providers/auth_provider.dart';
 import 'package:hawahawa/screens/splash_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -48,6 +51,9 @@ Future<void> _performGlobalDebugReset() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('saved_location');
     await prefs.remove('is_authenticated');
+    await prefs.remove('tempUnit');
+    await prefs.remove('timeFormat');
+    await prefs.remove('backgroundMode');
     print('[DEBUG] SharedPreferences cleared successfully');
 
     // Navigate back to splash with reset flag

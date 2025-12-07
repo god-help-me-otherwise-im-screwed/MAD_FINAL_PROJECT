@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hawahawa/screens/startup_screen.dart';
 import 'package:hawahawa/screens/weather_display_screen.dart';
 import 'package:hawahawa/providers/location_provider.dart';
-import 'package:hawahawa/providers/auth_provider.dart';
 import 'package:hawahawa/providers/weather_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -89,30 +88,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
 
-    // Try to load saved location and auth status
+    // Try to load saved location
+    // NOTE: Location persistence is INDEPENDENT of authentication status
     final savedLocation = await ref
         .read(locationProvider.notifier)
         .loadSavedLocation();
-    final isAuthenticated = await ref
-        .read(authProvider.notifier)
-        .loadAuthStatus();
 
     await Future.delayed(const Duration(milliseconds: 2200));
 
     if (mounted) {
-      // Smart routing: if location is saved AND authenticated, go to weather display
-      // Otherwise, go to startup screen for onboarding
-      if (savedLocation != null && isAuthenticated) {
-        print(
-          '[ROUTING] Saved location found + authenticated -> WeatherDisplayScreen',
-        );
+      // Smart routing: if location is saved, go to weather display
+      // Otherwise, go to startup screen for location selection
+      if (savedLocation != null) {
+        print('[ROUTING] Saved location found -> WeatherDisplayScreen');
         // Fetch weather data before navigating
         await ref.read(weatherProvider.notifier).fetchWeather(savedLocation);
         _navigateToWeather();
       } else {
-        print(
-          '[ROUTING] No saved location OR not authenticated -> StartupScreen',
-        );
+        print('[ROUTING] No saved location -> StartupScreen');
         _navigateToStartup();
       }
     }

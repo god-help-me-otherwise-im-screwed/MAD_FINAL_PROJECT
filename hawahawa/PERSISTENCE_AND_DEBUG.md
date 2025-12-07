@@ -48,7 +48,45 @@ This document explains the implementation of persistent state management and a g
 
 ---
 
-### 3. **Smart Initial Routing** (`lib/screens/splash_screen.dart`)
+### 3. **Persistent Settings Storage** (`lib/providers/settings_provider.dart`)
+
+#### New Methods Added:
+
+**`loadFromStorage()`**
+- Loads user preferences from local storage on app startup
+- Retrieves: tempUnit, timeFormat, backgroundMode (all as integers)
+- Returns nothing, updates state directly via `state = AppSettings(...)`
+- Defaults to 0 for all fields if no saved data exists (0=Celsius, 0=24h, 0=realtime)
+- Called automatically by SplashScreen during initialization
+
+**`saveToStorage()`**
+- Persists current settings state to local storage
+- Automatically called after every state change (in setTempUnit, setTimeFormat, setBackgroundMode)
+- Ensures settings persist across app restarts
+- No manual save needed - happens automatically
+
+**`resetDebugData()`**
+- Clears all persisted settings from storage
+- Resets state to `const AppSettings()` (all defaults)
+- Called when user presses **Ctrl+Delete** debug key combo
+
+#### Updated Methods:
+
+**`setTempUnit(int unit)`**
+- Now calls `saveToStorage()` automatically after state change
+- No manual save needed
+
+**`setTimeFormat(int format)`**
+- Now calls `saveToStorage()` automatically after state change
+- No manual save needed
+
+**`setBackgroundMode(int mode)` [NEW]**
+- Added method to update background display mode
+- Automatically saves to storage
+
+---
+
+### 4. **Smart Initial Routing** (`lib/screens/splash_screen.dart`)
 
 #### Updated to ConsumerStatefulWidget
 
@@ -90,7 +128,7 @@ Always → StartupScreen
 
 ---
 
-### 4. **Global Debug Reset Feature** (`lib/screens/splash_screen.dart`)
+### 4. **Global Debug Reset Feature** (`lib/main.dart`)
 
 #### Keyboard Listener Setup
 
@@ -101,11 +139,11 @@ Always → StartupScreen
 
 #### Key Press Handler
 
-**`_handleKeyPress(KeyEvent event)`**
-- Monitors all key presses on desktop platforms
+**`_handleKeyPress(KeyEvent event)`** [in `_globalKeyHandler()`]
+- Monitors all key presses on desktop and mobile platforms
 - Detects: **Ctrl+Delete** or **Ctrl+Backspace** combo
 - Returns true when combo is detected (event consumed)
-- Prints debug message: `[DEBUG] Reset key combo detected: Ctrl+Delete`
+- Prints debug message: `[DEBUG] Global reset triggered: Ctrl+Delete`
 
 **Key Detection Logic:**
 ```dart
@@ -115,19 +153,20 @@ isDeletKey = LogicalKeyboardKey.delete
              OR LogicalKeyboardKey.backspace
 
 if (isCtrlPressed && isDeletKey) {
-  _performDebugReset()
+  _performGlobalDebugReset()
 }
 ```
 
-#### Debug Reset Function
+#### Global Debug Reset Function
 
-**`_performDebugReset()`**
-- Executed when debug key combo detected
-- Performs 3 actions:
-  1. Clears location data: `ref.read(locationProvider.notifier).resetDebugData()`
-  2. Clears auth data: `ref.read(authProvider.notifier).resetDebugData()`
-  3. Navigates to StartupScreen
-- Prints debug message: `[DEBUG] Debug reset completed - navigating to StartupScreen`
+**`_performGlobalDebugReset()`**
+- Executed when debug key combo detected (from main.dart)
+- Performs 4 actions:
+  1. Clears location data from SharedPreferences
+  2. Clears auth data from SharedPreferences
+  3. Clears settings data from SharedPreferences
+  4. Navigates to SplashScreen with `reset: true` flag
+- Prints debug messages for verification
 - Useful for testing first-time user experience without clearing app manually
 
 ---
@@ -155,6 +194,21 @@ Value: Boolean
 Example: true
 ```
 
+**Settings Data:**
+```
+Key: "tempUnit"
+Value: Integer (0=Celsius, 1=Fahrenheit)
+Example: 0
+
+Key: "timeFormat"
+Value: Integer (0=24h, 1=12h)
+Example: 0
+
+Key: "backgroundMode"
+Value: Integer (0=realtime, 1=custom, 2=static)
+Example: 0
+```
+
 ---
 
 ## File Changes Summary
@@ -165,7 +219,9 @@ Example: true
 |------|---------|--------|
 | `lib/providers/location_provider.dart` | Added `saveLocation()`, `loadSavedLocation()`, `resetDebugData()` | Automatic persistence + reset capability |
 | `lib/providers/auth_provider.dart` | Added `saveAuthStatus()`, `loadAuthStatus()`, `resetDebugData()` | Automatic persistence + reset capability |
+| `lib/providers/settings_provider.dart` | Added `loadFromStorage()`, `saveToStorage()`, `resetDebugData()` | Automatic persistence + reset capability |
 | `lib/screens/splash_screen.dart` | Changed to ConsumerStatefulWidget, added routing logic, keyboard handler, debug reset | Smart routing based on saved data |
+| `lib/main.dart` | Added imports, updated `_performGlobalDebugReset()` to clear settings keys | Global reset clears all persisted data |
 | `pubspec.yaml` | No changes needed | shared_preferences already included |
 
 ### No Files Created
@@ -357,9 +413,17 @@ AuthProvider (state management)
     ├─ loadAuthStatus() ← SharedPreferences
     └─ resetDebugData() → Clear SharedPreferences
 
+SettingsProvider (state management)
+    ├─ saveToStorage() → SharedPreferences (tempUnit, timeFormat, backgroundMode)
+    ├─ loadFromStorage() ← SharedPreferences
+    └─ resetDebugData() → Clear SharedPreferences
+
 SharedPreferences (device storage)
     ├─ "saved_location": LocationResult JSON
-    └─ "is_authenticated": boolean
+    ├─ "is_authenticated": boolean
+    ├─ "tempUnit": integer
+    ├─ "timeFormat": integer
+    └─ "backgroundMode": integer
 ```
 
 ---
@@ -378,9 +442,10 @@ SharedPreferences (device storage)
 
 ### Debug Reset Triggered:
 ```
-[DEBUG] Reset key combo detected: Ctrl+Delete
-[DEBUG] Performing full debug reset...
-[DEBUG] Debug reset completed - navigating to StartupScreen
+[DEBUG] Global reset triggered: Ctrl+Delete
+[DEBUG] Performing global debug reset...
+[DEBUG] SharedPreferences cleared successfully
+[DEBUG] Navigated to SplashScreen with reset flag
 ```
 
 ### Error During Load:
