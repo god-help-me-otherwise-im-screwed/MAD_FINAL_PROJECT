@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class WeatherCodeMapper {
   static const Map<int, String> weatherCode = {
     0: 'Unknown',
@@ -339,5 +341,25 @@ class WeatherCodeMapper {
     }
 
     return weatherCode[intCode] ?? 'Unknown Code ($code)';
+  }
+
+  /// **FIX: Added missing getIcon method as a placeholder.**
+  static IconData getIcon(dynamic code) {
+    if (code == null) return Icons.device_unknown;
+    final int? intCode = int.tryParse(code.toString());
+    if (intCode == null) return Icons.device_unknown;
+
+    // Simple mapping to placeholder icons based on code ranges/groups
+    // This is just a basic placeholder logic to make the code compile.
+    if (intCode >= 4000 && intCode < 5000) return Icons.umbrella; // Rain/Drizzle
+    if (intCode >= 5000 && intCode < 6000) return Icons.cloudy_snowing; // Snow
+    if (intCode >= 6000 && intCode < 7000) return Icons.ac_unit; // Freezing Rain/Drizzle
+    if (intCode >= 7000 && intCode < 8000) return Icons.grain; // Ice Pellets
+    if (intCode >= 8000) return Icons.thunderstorm; // Thunderstorm
+    if (intCode == 2000 || intCode == 2100) return Icons.foggy; // Fog
+    if (intCode == 1000) return Icons.wb_sunny; // Clear, Sunny
+    
+    // Default for cloudy, mostly clear, unknown
+    return Icons.cloud;
   }
 }

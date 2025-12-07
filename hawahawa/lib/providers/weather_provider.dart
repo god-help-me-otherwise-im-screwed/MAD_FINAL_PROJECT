@@ -130,9 +130,15 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
             await _setDataIsFresh(false);
             print('[WEATHER] Loaded from cache due to API error');
           } else {
-            // No cache available, use default
-            // FIX: Removed unnecessary null check on WeatherReport.placeholder()
-            state = WeatherReport.placeholder();
+            // No cache available, use default but preserve location name
+            final placeholder = WeatherReport.placeholder();
+            state = WeatherReport(
+              locationName: location.displayName,
+              current: placeholder.current,
+              hourly: placeholder.hourly,
+              daily: placeholder.daily,
+              timezoneOffset: placeholder.timezoneOffset,
+            );
             await _setDataIsFresh(false);
             print('[WEATHER] Using default weather (no cache available)');
           }
@@ -146,8 +152,15 @@ class WeatherNotifier extends StateNotifier<WeatherReport?> {
           await _setDataIsFresh(false);
           print('[WEATHER] Loaded from cache (offline)');
         } else {
-          // No cache available, use default
-          state = WeatherReport.placeholder();
+          // No cache available, use default but preserve location name
+          final placeholder = WeatherReport.placeholder();
+          state = WeatherReport(
+            locationName: location.displayName,
+            current: placeholder.current,
+            hourly: placeholder.hourly,
+            daily: placeholder.daily,
+            timezoneOffset: placeholder.timezoneOffset,
+          );
           await _setDataIsFresh(false);
           print('[WEATHER] Using default weather (offline, no cache)');
         }

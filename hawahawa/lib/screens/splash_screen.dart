@@ -116,6 +116,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         _navigateToLocationPermission();
       } else if (savedLocation != null) {
         print('[ROUTING] Saved location found -> WeatherDisplayScreen');
+        // Initialize location provider with saved location
+        ref.read(locationProvider.notifier).setLocation(savedLocation);
         // Fetch weather data before navigating
         await ref.read(weatherProvider.notifier).fetchWeather(savedLocation);
         _navigateToWeather();
