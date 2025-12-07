@@ -20,24 +20,28 @@ class MapPickerScreen extends ConsumerWidget {
       body: Stack(
         children: [
           Container(
-            color: kDarkPrimary.withOpacity(0.5),
+            color: kDarkPrimary.withValues(alpha: 0.5),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.map, size: 64, color: kDarkText.withOpacity(0.3)),
+                  Icon(
+                    Icons.map,
+                    size: 64,
+                    color: kDarkText.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'MAP PICKER',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: kDarkText.withOpacity(0.5),
+                      color: kDarkText.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'flutter_map integration goes here',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: kDarkText.withOpacity(0.3),
+                      color: kDarkText.withValues(alpha: 0.3),
                     ),
                   ),
                 ],
@@ -50,15 +54,20 @@ class MapPickerScreen extends ConsumerWidget {
             right: 24,
             child: ElevatedButton(
               onPressed: () async {
-                const demoLocation = LocationResult(
-                  name: 'Selected Location',
-                  coords: AppLatLng(31.5204, 74.3587),
+                final demoLocation = LocationResult(
+                  lat: 31.5204,
+                  lon: 74.3587,
+                  displayName: 'Selected Location',
                 );
                 ref.read(locationProvider.notifier).setLocation(demoLocation);
-                await ref.read(weatherProvider.notifier).fetchWeather(demoLocation.coords);
+                await ref
+                    .read(weatherProvider.notifier)
+                    .fetchWeather(demoLocation);
                 if (context.mounted) {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (c) => const WeatherDisplayScreen()),
+                    MaterialPageRoute(
+                      builder: (c) => const WeatherDisplayScreen(),
+                    ),
                   );
                 }
               },

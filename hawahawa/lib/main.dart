@@ -28,7 +28,7 @@ class PixelWeatherApp extends ConsumerWidget {
       focusNode: focusNode,
       onKeyEvent: (FocusNode node, KeyEvent event) {
         if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.keyP) {
+          if (event.logicalKey == LogicalKeyboardKey.escape) {
             if (navigatorKey.currentState != null) {
               navigatorKey.currentState!.pushAndRemoveUntil(
                 MaterialPageRoute(

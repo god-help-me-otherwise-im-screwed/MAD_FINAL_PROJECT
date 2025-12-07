@@ -47,13 +47,19 @@ class StartupScreen extends ConsumerWidget {
                 icon: Icons.my_location,
                 label: 'USE GPS LOCATION',
                 onPressed: () async {
-                  await ref.read(locationProvider.notifier).requestGpsLocation();
+                  await ref
+                      .read(locationProvider.notifier)
+                      .requestGpsLocation();
                   final location = ref.read(locationProvider);
                   if (location != null && context.mounted) {
-                    await ref.read(weatherProvider.notifier).fetchWeather(location.coords);
+                    await ref
+                        .read(weatherProvider.notifier)
+                        .fetchWeather(location);
                     if (context.mounted) {
                       Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (c) => const WeatherDisplayScreen()),
+                        MaterialPageRoute(
+                          builder: (c) => const WeatherDisplayScreen(),
+                        ),
                       );
                     }
                   }
@@ -77,7 +83,9 @@ class StartupScreen extends ConsumerWidget {
                 label: 'SEARCH BY NAME',
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (c) => const SearchLocationScreen()),
+                    MaterialPageRoute(
+                      builder: (c) => const SearchLocationScreen(),
+                    ),
                   );
                 },
               ),

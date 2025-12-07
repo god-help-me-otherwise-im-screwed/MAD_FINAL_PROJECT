@@ -6,8 +6,8 @@ import 'package:hawahawa/models/location_model.dart';
 class WeatherNotifier extends StateNotifier<WeatherReport?> {
   WeatherNotifier() : super(null);
 
-  Future<void> fetchWeather(AppLatLng coords) async {
-    final report = await WeatherAPI.fetchWeather(coords);
+  Future<void> fetchWeather(LocationResult location) async {
+    final report = await WeatherAPI.fetchWeather(location);
     state = report;
   }
 }

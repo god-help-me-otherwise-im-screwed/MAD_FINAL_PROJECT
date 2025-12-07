@@ -24,7 +24,7 @@ class PullUpForecastMenu extends ConsumerWidget {
           decoration: BoxDecoration(
             color: kGlassDark,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(color: kDarkAccent.withOpacity(0.3)),
+            border: Border.all(color: kDarkAccent.withValues(alpha: 0.3)),
           ),
           child: weather == null
               ? const Center(child: CircularProgressIndicator())
@@ -37,7 +37,7 @@ class PullUpForecastMenu extends ConsumerWidget {
                         width: 48,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: kDarkText.withOpacity(0.3),
+                          color: kDarkText.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -56,7 +56,7 @@ class PullUpForecastMenu extends ConsumerWidget {
                     Text(
                       'Hourly',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: kDarkText.withOpacity(0.7),
+                        color: kDarkText.withValues(alpha: 0.7),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -68,30 +68,29 @@ class PullUpForecastMenu extends ConsumerWidget {
                         itemCount: weather.hourly.length.clamp(0, 12),
                         itemBuilder: (context, index) {
                           final hour = weather.hourly[index];
-                          final temp = settings.tempUnit == 0
-                              ? hour.temp
-                              : (hour.temp * 9 / 5) + 32;
+                          final temp = hour.values['temperature'] as num?;
+                          final tempFormatted = settings.tempUnit == 0
+                              ? temp
+                              : (temp != null ? (temp * 9 / 5) + 32 : 0);
                           final unit = settings.tempUnit == 0 ? '°C' : '°F';
-                          final time = settings.timeFormat == 0
-                              ? '${hour.timestamp.hour}:00'
-                              : _format12Hour(hour.timestamp.hour);
+                          final timeStr = hour.getFormattedTime();
 
                           return Container(
                             width: 70,
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: kGlassLight.withOpacity(0.1),
+                              color: kGlassLight.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: kDarkAccent.withOpacity(0.2),
+                                color: kDarkAccent.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  time,
+                                  timeStr,
                                   style: const TextStyle(
                                     color: kDarkText,
                                     fontSize: 12,
@@ -99,7 +98,7 @@ class PullUpForecastMenu extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${temp.toStringAsFixed(0)}$unit',
+                                  '${tempFormatted?.toStringAsFixed(0) ?? 'N/A'}$unit',
                                   style: const TextStyle(
                                     color: kDarkText,
                                     fontSize: 16,
@@ -109,10 +108,10 @@ class PullUpForecastMenu extends ConsumerWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   WeatherCodeMapper.getDescription(
-                                    hour.conditionCode,
+                                    hour.values['weatherCode'],
                                   ).split(' ').first,
                                   style: TextStyle(
-                                    color: kDarkText.withOpacity(0.6),
+                                    color: kDarkText.withValues(alpha: 0.6),
                                     fontSize: 10,
                                   ),
                                   textAlign: TextAlign.center,
@@ -127,44 +126,45 @@ class PullUpForecastMenu extends ConsumerWidget {
                     Text(
                       'Daily',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: kDarkText.withOpacity(0.7),
+                        color: kDarkText.withValues(alpha: 0.7),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     ...weather.daily.map((day) {
-                      final temp = settings.tempUnit == 0
-                          ? day.temp
-                          : (day.temp * 9 / 5) + 32;
+                      final temp = day.values['temperature'] as num?;
+                      final tempFormatted = settings.tempUnit == 0
+                          ? temp
+                          : (temp != null ? (temp * 9 / 5) + 32 : 0);
                       final unit = settings.tempUnit == 0 ? '°C' : '°F';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: kGlassLight.withOpacity(0.1),
+                          color: kGlassLight.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: kDarkAccent.withOpacity(0.2),
+                            color: kDarkAccent.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _formatDate(day.timestamp),
+                              day.getFormattedTime(),
                               style: const TextStyle(color: kDarkText),
                             ),
                             Text(
                               WeatherCodeMapper.getDescription(
-                                day.conditionCode,
+                                day.values['weatherCode'],
                               ),
                               style: TextStyle(
-                                color: kDarkText.withOpacity(0.7),
+                                color: kDarkText.withValues(alpha: 0.7),
                               ),
                             ),
                             Text(
-                              '${temp.toStringAsFixed(0)}$unit',
+                              '${tempFormatted?.toStringAsFixed(0) ?? 'N/A'}$unit',
                               style: const TextStyle(
                                 color: kDarkText,
                                 fontWeight: FontWeight.bold,
@@ -173,23 +173,11 @@ class PullUpForecastMenu extends ConsumerWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
         );
       },
     );
-  }
-
-  String _format12Hour(int hour) {
-    if (hour == 0) return '12 AM';
-    if (hour < 12) return '$hour AM';
-    if (hour == 12) return '12 PM';
-    return '${hour - 12} PM';
-  }
-
-  String _formatDate(DateTime date) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${days[(date.weekday - 1) % 7]} ${date.day}';
   }
 }

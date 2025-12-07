@@ -6,16 +6,36 @@ import 'package:hawahawa/models/location_model.dart';
 import 'package:hawahawa/models/weather_model.dart';
 import 'package:hawahawa/constants/app_constants.dart';
 
+final List<String> requiredFields = [
+  'temperature',
+  'temperatureApparent',
+  'humidity',
+  'windSpeed',
+  'windDirection',
+  'sunriseTime',
+  'sunsetTime',
+  'visibility',
+  'cloudCover',
+  'moonPhase',
+  'uvIndex',
+  'weatherCode',
+  'weatherCodeFullDay',
+  'weatherCodeDay',
+  'weatherCodeNight',
+  'thunderstormProbability',
+];
+
 class LocationAPI {
   static Future<LocationResult?> getLocationFromGps() async {
     try {
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        return const LocationResult(
-          name: 'Lahore, Pakistan (Default)',
-          coords: AppLatLng(31.5204, 74.3587),
+        return LocationResult(
+          lat: 31.5204,
+          lon: 74.3587,
+          displayName: 'Lahore, Pakistan (Default)',
         );
       }
 
@@ -23,17 +43,19 @@ class LocationAPI {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          return const LocationResult(
-            name: 'Lahore, Pakistan (Default)',
-            coords: AppLatLng(31.5204, 74.3587),
+          return LocationResult(
+            lat: 31.5204,
+            lon: 74.3587,
+            displayName: 'Lahore, Pakistan (Default)',
           );
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        return const LocationResult(
-          name: 'Lahore, Pakistan (Default)',
-          coords: AppLatLng(31.5204, 74.3587),
+        return LocationResult(
+          lat: 31.5204,
+          lon: 74.3587,
+          displayName: 'Lahore, Pakistan (Default)',
         );
       }
 
@@ -42,17 +64,22 @@ class LocationAPI {
         timeLimit: const Duration(seconds: 10),
       );
 
-      final locationName = await reverseGeocode(position.latitude, position.longitude);
-      
+      final locationName = await reverseGeocode(
+        position.latitude,
+        position.longitude,
+      );
+
       return LocationResult(
-        name: locationName,
-        coords: AppLatLng(position.latitude, position.longitude),
+        lat: position.latitude,
+        lon: position.longitude,
+        displayName: locationName,
       );
     } catch (e) {
       print('GPS Error: $e');
-      return const LocationResult(
-        name: 'Lahore, Pakistan (Default)',
-        coords: AppLatLng(31.5204, 74.3587),
+      return LocationResult(
+        lat: 31.5204,
+        lon: 74.3587,
+        displayName: 'Lahore, Pakistan (Default)',
       );
     }
   }
@@ -68,7 +95,7 @@ class LocationAPI {
       });
 
       final response = await http
-          .get(uri, headers: {'User-Agent': 'PixelWeatherSim/1.0'})
+          .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
           .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -84,7 +111,7 @@ class LocationAPI {
   static Future<LocationResult?> searchLocationByName(String name) async {
     try {
       await Future.delayed(const Duration(milliseconds: 800));
-      
+
       final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
         'q': name,
         'format': 'json',
@@ -94,7 +121,7 @@ class LocationAPI {
       });
 
       final response = await http
-          .get(uri, headers: {'User-Agent': 'PixelWeatherSim/1.0'})
+          .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
           .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -102,29 +129,55 @@ class LocationAPI {
         if (results.isNotEmpty) {
           final first = results[0];
           return LocationResult(
-            name: first['display_name'] ?? name,
-            coords: AppLatLng(
-              double.parse(first['lat'].toString()),
-              double.parse(first['lon'].toString()),
-            ),
+            lat: double.parse(first['lat'].toString()),
+            lon: double.parse(first['lon'].toString()),
+            displayName: first['display_name'] ?? name,
           );
         }
       }
-      
+
       return null;
     } catch (e) {
       print('Search Error: $e');
       return null;
     }
   }
+
+  static Future<List<LocationResult>> searchLocations(String query) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': query,
+        'format': 'json',
+        'limit': '10',
+        'addressdetails': '1',
+        'accept-language': 'en',
+      });
+
+      final response = await http
+          .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) {
+        throw Exception('Search failed: ${response.statusCode}');
+      }
+
+      final List results = jsonDecode(response.body);
+      return results.map((json) => LocationResult.fromNominatim(json)).toList();
+    } catch (e) {
+      print('Search Error: $e');
+      return [];
+    }
+  }
 }
 
 class WeatherAPI {
-  static Future<WeatherReport> fetchWeather(AppLatLng coords) async {
+  static Future<WeatherReport> fetchWeather(LocationResult location) async {
     try {
       final uri = Uri.https('api.tomorrow.io', '/v4/timelines', {
-        'location': '${coords.lat},${coords.lon}',
-        'fields': 'temperature,temperatureApparent,humidity,windSpeed,windDirection,weatherCode,cloudCover,visibility,uvIndex',
+        'location': '${location.lat},${location.lon}',
+        'fields': requiredFields.join(','),
         'timesteps': 'current,1h,1d',
         'units': 'metric',
         'apikey': kTomorrowIoApiKey,
@@ -134,7 +187,7 @@ class WeatherAPI {
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return _parseWeatherResponse(json);
+        return _parseWeatherResponse(json, location);
       } else {
         print('Weather API Error: ${response.statusCode}');
         return WeatherReport.placeholder();
@@ -145,7 +198,10 @@ class WeatherAPI {
     }
   }
 
-  static WeatherReport _parseWeatherResponse(Map<String, dynamic> json) {
+  static WeatherReport _parseWeatherResponse(
+    Map<String, dynamic> json,
+    LocationResult location,
+  ) {
     try {
       final timelines = (json['data']?['timelines'] as List?) ?? [];
 
@@ -179,6 +235,7 @@ class WeatherAPI {
       }
 
       return WeatherReport(
+        locationName: location.displayName,
         current: current,
         hourly: hourly,
         daily: daily,
@@ -197,15 +254,12 @@ class WeatherAPI {
       final valuesMap = interval['values'] as Map<String, dynamic>?;
       if (valuesMap == null) return null;
 
-      return WeatherData(
-        temp: (valuesMap['temperature'] ?? 20.0).toDouble(),
-        conditionCode: (valuesMap['weatherCode'] ?? 1000) as int,
-        timestamp: DateTime.parse(startTime),
-        humidity: valuesMap['humidity']?.toDouble(),
-        windSpeed: valuesMap['windSpeed']?.toDouble(),
-        cloudCover: valuesMap['cloudCover']?.toDouble(),
-        precipitation: 0.0,
-      );
+      final extractedValues = <String, dynamic>{};
+      for (var field in requiredFields) {
+        extractedValues[field] = valuesMap[field];
+      }
+
+      return WeatherData(timestamp: startTime, values: extractedValues);
     } catch (e) {
       return null;
     }
