@@ -50,18 +50,18 @@ class StartupScreen extends ConsumerWidget {
                   await ref
                       .read(locationProvider.notifier)
                       .requestGpsLocation();
+                  if (!context.mounted) return;
                   final location = ref.read(locationProvider);
-                  if (location != null && context.mounted) {
+                  if (location != null) {
                     await ref
                         .read(weatherProvider.notifier)
                         .fetchWeather(location);
-                    if (context.mounted) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (c) => const WeatherDisplayScreen(),
-                        ),
-                      );
-                    }
+                    if (!context.mounted) return;
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (c) => const WeatherDisplayScreen(),
+                      ),
+                    );
                   }
                 },
               ),

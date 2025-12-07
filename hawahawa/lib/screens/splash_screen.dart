@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hawahawa/screens/startup_screen.dart';
+import 'package:hawahawa/screens/weather_display_screen.dart';
+import 'package:hawahawa/providers/location_provider.dart';
+import 'package:hawahawa/providers/auth_provider.dart';
+import 'package:hawahawa/providers/weather_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   final bool reset;
   const SplashScreen({super.key, required this.reset});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _textController;
   late Animation<double> _textScaleAnimation;
   final String _title = 'Hawa Hawa';
 
   late AnimationController _logoController;
   late Animation<double> _logoScaleAnimation;
-  
+
   late AnimationController _gradientController;
   late Animation<double> _gradientAnimation;
 
@@ -27,11 +34,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _gradientController = AnimationController(
       vsync: this,
       // Increased duration slightly for a more gentle flow
-      duration: const Duration(seconds: 18), 
+      duration: const Duration(seconds: 18),
     );
     _gradientAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
       // CHANGED: Using a smoother curve for a "breathing" effect
-      CurvedAnimation(parent: _gradientController, curve: Curves.easeInOutCubic),
+      CurvedAnimation(
+        parent: _gradientController,
+        curve: Curves.easeInOutCubic,
+      ),
     );
 
     _gradientController.repeat(reverse: true);
@@ -40,17 +50,20 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _logoScaleAnimation = Tween<double>(begin: 0.8, end: 1.0)
-      .animate(CurvedAnimation(parent: _logoController, curve: Curves.easeOut));
+    _logoScaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _logoController, curve: Curves.easeOut));
     _logoController.forward();
 
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _textScaleAnimation = Tween<double>(begin: 0.0, end: 1.0)
-      .animate(CurvedAnimation(parent: _textController, curve: Curves.bounceOut));
-    
+    _textScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _textController, curve: Curves.bounceOut),
+    );
+
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) {
         _textController.forward();
@@ -69,37 +82,77 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   void _startApp() async {
-    final duration = widget.reset
-        ? const Duration(milliseconds: 700) 
-        : const Duration(milliseconds: 2200); 
+    // If reset flag is set, navigate to startup immediately
+    if (widget.reset) {
+      await Future.delayed(const Duration(milliseconds: 700));
+      _navigateToStartup();
+      return;
+    }
 
-    await Future.delayed(duration);
+    // Try to load saved location and auth status
+    final savedLocation = await ref
+        .read(locationProvider.notifier)
+        .loadSavedLocation();
+    final isAuthenticated = await ref
+        .read(authProvider.notifier)
+        .loadAuthStatus();
+
+    await Future.delayed(const Duration(milliseconds: 2200));
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 600),
-          pageBuilder: (context, animation, secondaryAnimation) => const StartupScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-        ),
-      );
+      // Smart routing: if location is saved AND authenticated, go to weather display
+      // Otherwise, go to startup screen for onboarding
+      if (savedLocation != null && isAuthenticated) {
+        print(
+          '[ROUTING] Saved location found + authenticated -> WeatherDisplayScreen',
+        );
+        // Fetch weather data before navigating
+        await ref.read(weatherProvider.notifier).fetchWeather(savedLocation);
+        _navigateToWeather();
+      } else {
+        print(
+          '[ROUTING] No saved location OR not authenticated -> StartupScreen',
+        );
+        _navigateToStartup();
+      }
     }
+  }
+
+  void _navigateToStartup() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const StartupScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  void _navigateToWeather() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const WeatherDisplayScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final baseColor = theme.scaffoldBackgroundColor;
-    
+
     // --- CUSTOM COLOR DEFINITION ---
-    final customColor1 = const Color.fromARGB(255, 25, 1, 44); 
-    final highlightColor = customColor1.withAlpha(128); 
-    
+    final customColor1 = const Color.fromARGB(255, 25, 1, 44);
+    final highlightColor = customColor1.withAlpha(128);
+
     final customColor2 = const Color.fromARGB(255, 95, 10, 112);
     final shadowColor = customColor2.withAlpha(64);
     // -------------------------------
@@ -117,16 +170,22 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     // CHANGED: Diagonal movement for a sweeping effect
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    
-                    colors: [baseColor, shadowColor, highlightColor, shadowColor, baseColor],
-                    
+
+                    colors: [
+                      baseColor,
+                      shadowColor,
+                      highlightColor,
+                      shadowColor,
+                      baseColor,
+                    ],
+
                     // Kept the stops as they were adjusted to fit the 5 colors
                     stops: [
-                      -0.6 + _gradientAnimation.value * 0.5, 
-                      -0.3 + _gradientAnimation.value * 0.5, 
-                      0.5 + _gradientAnimation.value * 0.5,  
-                      1.3 + _gradientAnimation.value * 0.5,  
-                      1.6 + _gradientAnimation.value * 0.5,  
+                      -0.6 + _gradientAnimation.value * 0.5,
+                      -0.3 + _gradientAnimation.value * 0.5,
+                      0.5 + _gradientAnimation.value * 0.5,
+                      1.3 + _gradientAnimation.value * 0.5,
+                      1.6 + _gradientAnimation.value * 0.5,
                     ],
                   ),
                 ),
@@ -140,11 +199,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Flexible(flex: 3, child: SizedBox.shrink()),
-                  
+
                   Flexible(
                     flex: 5,
                     child: FadeTransition(
-                      opacity: _logoController, 
+                      opacity: _logoController,
                       child: ScaleTransition(
                         scale: _logoScaleAnimation,
                         child: FractionallySizedBox(
@@ -166,7 +225,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   ScaleTransition(
                     scale: _textScaleAnimation,
                     child: Text(
@@ -177,7 +236,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                     ),
                   ),
-                  
+
                   const Flexible(flex: 4, child: SizedBox.shrink()),
                 ],
               ),

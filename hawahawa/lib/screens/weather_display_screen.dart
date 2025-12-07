@@ -154,19 +154,22 @@ class _WeatherDisplayScreenState extends ConsumerState<WeatherDisplayScreen> {
           const SizedBox(height: 32),
 
           // Additional info row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildInfoCard(
-                'Humidity',
-                '${humidity is num ? humidity.toStringAsFixed(0) : humidity}%',
-              ),
-              const SizedBox(width: 24),
-              _buildInfoCard(
-                'Wind',
-                '${windSpeed is num ? windSpeed.toStringAsFixed(1) : windSpeed} m/s',
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildInfoCard(
+                  'Humidity',
+                  '${humidity is num ? humidity.toStringAsFixed(0) : humidity}%',
+                ),
+                const SizedBox(width: 24),
+                _buildInfoCard(
+                  'Wind',
+                  '${windSpeed is num ? windSpeed.toStringAsFixed(1) : windSpeed} m/s',
+                ),
+              ],
+            ),
           ),
         ],
       ),
