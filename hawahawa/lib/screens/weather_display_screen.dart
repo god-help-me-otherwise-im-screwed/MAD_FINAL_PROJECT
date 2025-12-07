@@ -36,6 +36,7 @@ class _WeatherDisplayScreenState extends ConsumerState<WeatherDisplayScreen> {
   @override
   Widget build(BuildContext context) {
     final weatherReport = ref.watch(weatherProvider);
+    final isFresh = ref.watch(weatherIsFreshProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -74,6 +75,48 @@ class _WeatherDisplayScreenState extends ConsumerState<WeatherDisplayScreen> {
                     ],
                   ),
                 ),
+
+              // Stale data indicator (shows when data is from cache/offline)
+              isFresh.when(
+                data: (fresh) {
+                  if (!fresh && weatherReport != null) {
+                    return Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.cloud_off,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'No Connection • Data Cached',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (err, st) => const SizedBox.shrink(),
+              ),
 
               // Pull-up forecast menu overlay
               const PullUpForecastMenu(),
