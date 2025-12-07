@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hawahawa/constants/colors.dart';
-import 'package:hawahawa/models/location_model.dart'; // Make sure this path is correct for your LocationResult model
+import 'package:hawahawa/models/location_model.dart';
 import 'package:hawahawa/providers/location_provider.dart';
 import 'package:hawahawa/providers/weather_provider.dart';
 import 'package:hawahawa/screens/weather_display_screen.dart';
 import 'package:hawahawa/screens/map_picker_screen.dart';
 import 'package:hawahawa/screens/search_location_screen.dart';
-import 'package:hawahawa/screens/login_screen.dart';
 
 class StartupScreen extends ConsumerStatefulWidget {
   const StartupScreen({super.key});
@@ -16,25 +15,83 @@ class StartupScreen extends ConsumerStatefulWidget {
   ConsumerState<StartupScreen> createState() => _StartupScreenState();
 }
 
-class _StartupScreenState extends ConsumerState<StartupScreen> {
+class _StartupScreenState extends ConsumerState<StartupScreen>
+    with TickerProviderStateMixin {
   // 1. STATE TRACKING
   bool _isGpsLoading = false;
   LocationResult? _detectedLocation;
+
+  // 2. ANIMATION CONTROLLERS
+  // Controller for the three interactive location selection buttons
+  late final AnimationController _selectionButtonController = AnimationController(
+    duration: const Duration(milliseconds: 150),
+    vsync: this,
+  );
+
+  // Controller for the PROCEED button (used for both press animation and disabled pulse)
+  late final AnimationController _proceedButtonController = AnimationController(
+    duration: const Duration(milliseconds: 1000),
+    vsync: this,
+  );
+
+  // Animation for the pulsing effect when the PROCEED button is disabled
+  late final Animation<double> _disabledPulseAnimation = Tween<double>(
+    begin: 0.8,
+    end: 1.0,
+  ).animate(CurvedAnimation(
+    parent: _proceedButtonController,
+    curve: Curves.easeInOut,
+  ));
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the pulsing animation loop immediately
+    _proceedButtonController.repeat(reverse: true);
+  }
 
   // Function to handle GPS button press
   Future<void> _handleGpsLocation() async {
     setState(() {
       _isGpsLoading = true;
-      _detectedLocation = null;
     });
 
-    // Request GPS location and wait for the result
     final LocationResult? location =
         await ref.read(locationProvider.notifier).requestGpsLocation();
 
     if (mounted) {
       setState(() {
         _isGpsLoading = false;
+        if (location != null) {
+          _detectedLocation = location;
+        }
+      });
+    }
+  }
+
+  // Function to handle map selection
+  Future<void> _handleMapSelection() async {
+    final LocationResult? location = await Navigator.of(context)
+        .push<LocationResult?>(
+          MaterialPageRoute(builder: (c) => const MapPickerScreen()),
+        );
+
+    if (location != null && mounted) {
+      setState(() {
+        _detectedLocation = location;
+      });
+    }
+  }
+
+  // Function to handle search location
+  Future<void> _handleSearchLocation() async {
+    final LocationResult? location = await Navigator.of(context)
+        .push<LocationResult?>(
+          MaterialPageRoute(builder: (c) => const SearchLocationScreen()),
+        );
+
+    if (location != null && mounted) {
+      setState(() {
         _detectedLocation = location;
       });
     }
@@ -44,24 +101,27 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
   Future<void> _proceedToWeather(LocationResult location) async {
     if (!mounted) return;
 
-    // Save the location to the provider (important for persistence)
     ref.read(locationProvider.notifier).setLocation(location);
-
-    // Fetch weather using the confirmed location
     await ref.read(weatherProvider.notifier).fetchWeather(location);
 
     if (!mounted) return;
 
-    // Navigate away
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (c) => const WeatherDisplayScreen(),
-      ),
+      MaterialPageRoute(builder: (c) => const WeatherDisplayScreen()),
     );
   }
 
   @override
+  void dispose() {
+    _selectionButtonController.dispose();
+    _proceedButtonController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isProceedEnabled = _detectedLocation != null;
+
     return Scaffold(
       backgroundColor: kDarkPrimary,
       body: SafeArea(
@@ -92,14 +152,14 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
               ),
               const Spacer(flex: 5),
 
-              // 2. LOCATION STATUS DISPLAY (No explicit loading spinner here)
+              // LOCATION STATUS DISPLAY (Always visible if a location is selected)
               if (_detectedLocation != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20.0),
                   child: Column(
                     children: [
                       Text(
-                        'Detected Location:',
+                        'Selected Location:',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               color: kDarkText.withOpacity(0.8),
                               fontWeight: FontWeight.normal,
@@ -107,10 +167,10 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _detectedLocation!
-                            .displayName, // Display the full displayName
+                        _detectedLocation!.displayName,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
                               color: kDarkText,
                               fontWeight: FontWeight.bold,
                             ),
@@ -118,64 +178,59 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
                     ],
                   ),
                 ),
-              // CONDITIONAL PROCEED BUTTON is shown *only* when a location is detected
-              if (_detectedLocation != null)
-                _buildButton(
-                  context,
-                  icon: Icons.cloud,
-                  label: 'PROCEED TO WEATHER',
-                  onPressed: () => _proceedToWeather(_detectedLocation!),
-                ),
-
-              // GPS Button is shown *only* when no location is detected
-              if (_detectedLocation == null)
-                _buildButton(
-                  context,
-                  icon: Icons.my_location,
-                  // Text changes to show loading state
-                  label: _isGpsLoading ? 'LOADING GPS...' : 'USE GPS LOCATION',
-                  // Button is disabled while loading
-                  onPressed: _isGpsLoading ? () {} : _handleGpsLocation,
-                ),
-
-              const SizedBox(height: 20),
-
-              // Other location methods
+              
+              // GPS Button (Always visible)
               _buildButton(
                 context,
-                icon: Icons.map,
-                label: 'SELECT ON MAP',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (c) => const MapPickerScreen()),
-                  );
-                },
+                icon: Icons.my_location,
+                label: _isGpsLoading ? 'LOADING GPS...' : 'USE GPS LOCATION',
+                onPressed: _isGpsLoading ? null : _handleGpsLocation,
+                isInteractive: true,
+                animationController: _selectionButtonController,
               ),
-              const SizedBox(height: 20),
-              _buildButton(
-                context,
-                icon: Icons.search,
-                label: 'SEARCH BY NAME',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (c) => const SearchLocationScreen()),
-                  );
-                },
+
+              // Map Selection Button (Always visible)
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0),
+                child: _buildButton(
+                  context,
+                  icon: Icons.map,
+                  label: 'SELECT ON MAP',
+                  onPressed: _handleMapSelection,
+                  isInteractive: true,
+                  animationController: _selectionButtonController,
+                ),
               ),
+
+              // Search Location Button (Always visible)
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0),
+                child: _buildButton(
+                  context,
+                  icon: Icons.search,
+                  label: 'SEARCH BY NAME',
+                  onPressed: _handleSearchLocation,
+                  isInteractive: true,
+                  animationController: _selectionButtonController,
+                ),
+              ),
+
               const Spacer(flex: 2),
+
+              // PROCEED TO WEATHER Button (Now has its own animation logic)
               _buildButton(
                 context,
-                icon: Icons.person,
-                label: 'LOGIN / USER INFO',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (c) => const LoginScreen()),
-                  );
-                },
-                secondary: true,
+                icon: isProceedEnabled ? Icons.cloud : Icons.lock,
+                label: 'PROCEED TO WEATHER',
+                onPressed: isProceedEnabled
+                    ? () => _proceedToWeather(_detectedLocation!)
+                    : null,
+                disabled: !isProceedEnabled,
+                isInteractive: true, // Mark as interactive for press animation
+                animationController: _proceedButtonController,
+                disabledPulse: isProceedEnabled ? null : _disabledPulseAnimation, // Pass pulse animation when disabled
               ),
+
               const Spacer(flex: 1),
             ],
           ),
@@ -188,45 +243,90 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
     BuildContext context, {
     required IconData icon,
     required String label,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
+    required AnimationController animationController,
+    Animation<double>? disabledPulse,
     bool secondary = false,
+    bool disabled = false,
+    bool isInteractive = false,
   }) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: secondary ? kDarkPrimary : kDarkAccent,
-        foregroundColor: kDarkText,
-        elevation: secondary ? 0 : 8,
-        shadowColor: kDarkAccent.withOpacity(0.5),
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: secondary
-                ? kDarkAccent.withOpacity(0.5)
-                : Colors.transparent,
-            width: 2,
-          ),
+    // Common styles
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: disabled
+          ? kDarkAccent.withOpacity(0.3)
+          : (secondary ? kDarkPrimary : kDarkAccent),
+      foregroundColor: disabled ? kDarkText.withOpacity(0.5) : kDarkText,
+      elevation: disabled ? 0 : (secondary ? 0 : 8),
+      shadowColor: kDarkAccent.withOpacity(0.5),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: disabled
+              ? kDarkAccent.withOpacity(0.2)
+              : (secondary ? kDarkAccent.withOpacity(0.5) : Colors.transparent),
+          width: 2,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 32),
-          const SizedBox(width: 16),
-          Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
-              ),
+    );
+
+    // Common child widget
+    final buttonChild = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 32),
+        const SizedBox(width: 16),
+        Flexible(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+              color: disabled ? kDarkText.withOpacity(0.5) : kDarkText,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    // Create the button widget
+    final button = ElevatedButton(
+      onPressed: onPressed,
+      style: buttonStyle,
+      child: buttonChild,
+    );
+
+    // 1. Disabled Pulse Animation for PROCEED button
+    if (disabled && disabledPulse != null) {
+      return AnimatedBuilder(
+        animation: disabledPulse,
+        builder: (context, child) {
+          // Wrap the disabled button in an Opacity widget controlled by the pulse animation
+          return Opacity(
+            opacity: disabledPulse.value,
+            child: button,
+          );
+        },
+      );
+    }
+    
+    // 2. Press-Down Scale Animation for Enabled buttons (Selection and PROCEED)
+    if (isInteractive && !disabled) {
+      return GestureDetector(
+        onTapDown: (_) => animationController.forward(),
+        onTapUp: (_) => animationController.reverse(),
+        onTapCancel: () => animationController.reverse(),
+        onTap: onPressed,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 1.0, end: 0.95).animate(animationController),
+          child: button,
+        ),
+      );
+    }
+
+    // 3. Fallback for non-interactive disabled buttons
+    return button;
   }
 }
