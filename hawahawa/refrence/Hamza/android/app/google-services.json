@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "83659478868",
+    "project_id": "hawahawa-weather-app-46865",
+    "storage_bucket": "hawahawa-weather-app-46865.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83659478868:android:9be4d2facdba0a231e5ac1",
+        "android_client_info": {
+          "package_name": "com.example.hawahawa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRTcZWRG3z-q06hPivm88TBg_SARSlI6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

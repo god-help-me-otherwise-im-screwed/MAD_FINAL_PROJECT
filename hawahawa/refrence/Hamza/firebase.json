@@ -1,0 +1,28 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "hawahawa-weather-app-46865",
+          "appId": "1:83659478868:android:9be4d2facdba0a231e5ac1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "hawahawa-weather-app-46865",
+          "configurations": {
+            "android": "1:83659478868:android:9be4d2facdba0a231e5ac1",
+            "ios": "1:83659478868:ios:a0a63d7b961d91cc1e5ac1",
+            "macos": "1:83659478868:ios:a0a63d7b961d91cc1e5ac1",
+            "web": "1:83659478868:web:7d8aa44936eb35151e5ac1",
+            "windows": "1:83659478868:web:e0b80e0ef5951a5c1e5ac1"
+          }
+        }
+      }
+    }
+  }
+}
