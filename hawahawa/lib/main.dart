@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hawahawa/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:hawahawa/constants/colors.dart';
 import 'package:hawahawa/providers/settings_provider.dart';
 import 'package:hawahawa/providers/location_provider.dart';
@@ -12,6 +14,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Initialize Firebase using the options file
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
