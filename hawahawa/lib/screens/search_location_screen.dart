@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import 'package:hawahawa/constants/colors.dart';
 import 'package:hawahawa/api/api_service.dart';
 import 'package:hawahawa/models/location_model.dart';
@@ -16,33 +17,44 @@ class _SearchLocationScreenState extends ConsumerState<SearchLocationScreen> {
   final _searchController = TextEditingController();
   List<LocationResult> _suggestions = [];
   bool _isSearching = false;
+  Timer? _debounce;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
   Future<void> _onSearchChanged(String query) async {
+    // Cancel previous debounce timer
+    _debounce?.cancel();
+
     if (query.trim().isEmpty) {
       setState(() => _suggestions = []);
       return;
     }
 
-    setState(() => _isSearching = true);
-    try {
-      final results = await LocationAPI.searchLocations(query);
-      if (mounted) {
-        setState(() {
-          _suggestions = results;
-          _isSearching = false;
-        });
+    // Debounce: wait 800ms before making the API call
+    _debounce = Timer(const Duration(milliseconds: 800), () async {
+      if (!mounted) return;
+
+      setState(() => _isSearching = true);
+      try {
+        final results = await LocationAPI.searchLocations(query);
+        if (mounted) {
+          setState(() {
+            _suggestions = results;
+            _isSearching = false;
+          });
+        }
+      } catch (e) {
+        print('Search error: $e');
+        if (mounted) {
+          setState(() => _isSearching = false);
+        }
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSearching = false);
-      }
-    }
+    });
   }
 
   void _selectLocation(LocationResult location) {

@@ -96,7 +96,7 @@ class LocationAPI {
 
       final response = await http
           .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -122,7 +122,7 @@ class LocationAPI {
 
       final response = await http
           .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final List results = jsonDecode(response.body);
@@ -155,9 +155,16 @@ class LocationAPI {
         'accept-language': 'en',
       });
 
+      // Increased timeout to 15 seconds to handle rate limiting and slow responses
       final response = await http
           .get(uri, headers: {'User-Agent': 'HahaweaWeather/1.0'})
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 429) {
+        // Rate limited - return empty list and let user retry
+        print('Search Error: API Rate Limited (429)');
+        return [];
+      }
 
       if (response.statusCode != 200) {
         throw Exception('Search failed: ${response.statusCode}');
@@ -165,6 +172,9 @@ class LocationAPI {
 
       final List results = jsonDecode(response.body);
       return results.map((json) => LocationResult.fromNominatim(json)).toList();
+    } on TimeoutException {
+      print('Search Error: Request timed out after 15 seconds');
+      return [];
     } catch (e) {
       print('Search Error: $e');
       return [];
